@@ -2,6 +2,7 @@ import { Response } from 'express';
 import { prisma } from '../lib/prisma';
 import { z } from 'zod';
 import { AuthRequest } from '../middleware/auth';
+import { classifyFeedback } from '../lib/ai';
 
 const createFeedbackSchema = z.object({
   content: z.string().min(1),
@@ -138,18 +139,37 @@ export const createFeedback = async (req: AuthRequest, res: Response) => {
     const workspaceId = req.user!.workspaceId;
     const { content, source, channel, customerLabel, sentiment, sentimentScore, themeIds } = createFeedbackSchema.parse(req.body);
 
+    // If sentiment isn't explicitly provided, run background AI classification
+    let finalSentiment = sentiment;
+    let finalScore = sentimentScore;
+    let finalThemeIds = themeIds || [];
+
+    if (!finalSentiment) {
+      const themes = await prisma.theme.findMany({ where: { workspaceId }, select: { name: true } });
+      const classification = await classifyFeedback(content, themes.map(t => t.name));
+      finalSentiment = classification.sentiment;
+      finalScore = classification.sentimentScore;
+
+      if (finalThemeIds.length === 0 && classification.matchedThemes.length > 0) {
+        const matched = await prisma.theme.findMany({
+          where: { workspaceId, name: { in: classification.matchedThemes } }
+        });
+        finalThemeIds = matched.map(m => m.id);
+      }
+    }
+
     const feedback = await prisma.feedback.create({
       data: {
         content,
         source,
         channel: channel || 'EMAIL',
         customerLabel,
-        sentiment,
-        sentimentScore,
+        sentiment: finalSentiment,
+        sentimentScore: finalScore,
         workspaceId,
         status: 'NEW',
-        themes: themeIds && themeIds.length > 0 ? {
-          create: themeIds.map(tId => ({ themeId: tId }))
+        themes: finalThemeIds.length > 0 ? {
+          create: finalThemeIds.map(tId => ({ themeId: tId }))
         } : undefined
       },
       include: {
@@ -211,6 +231,106 @@ export const updateFeedback = async (req: AuthRequest, res: Response) => {
     } else {
       res.status(500).json({ error: 'Failed to update feedback' });
     }
+  }
+};
+
+export const reclassifyFeedback = async (req: AuthRequest, res: Response) => {
+  try {
+    const workspaceId = req.user!.workspaceId;
+    const { id } = req.params;
+
+    const item = await prisma.feedback.findFirst({
+      where: { id, workspaceId }
+    });
+
+    if (!item) {
+      return res.status(404).json({ error: 'Feedback item not found' });
+    }
+
+    const availableThemes = await prisma.theme.findMany({
+      where: { workspaceId },
+      select: { id: true, name: true }
+    });
+
+    const classification = await classifyFeedback(item.content, availableThemes.map(t => t.name));
+
+    await prisma.feedbackTheme.deleteMany({ where: { feedbackId: id } });
+
+    const matchedThemeIds: string[] = [];
+    for (const themeName of classification.matchedThemes) {
+      let themeObj = availableThemes.find(t => t.name === themeName);
+      if (!themeObj) {
+        themeObj = await prisma.theme.create({
+          data: { name: themeName, workspaceId }
+        });
+      }
+      matchedThemeIds.push(themeObj.id);
+    }
+
+    const updated = await prisma.feedback.update({
+      where: { id },
+      data: {
+        sentiment: classification.sentiment,
+        sentimentScore: classification.sentimentScore,
+        customerLabel: classification.customerLabel || item.customerLabel,
+        themes: {
+          create: matchedThemeIds.map(tId => ({ themeId: tId, confidence: 0.9 }))
+        }
+      },
+      include: {
+        themes: { include: { theme: true } }
+      }
+    });
+
+    res.json({ message: 'Item reclassified successfully', data: updated, classification });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to reclassify feedback' });
+  }
+};
+
+export const backfillClassification = async (req: AuthRequest, res: Response) => {
+  try {
+    const workspaceId = req.user!.workspaceId;
+
+    const unclassified = await prisma.feedback.findMany({
+      where: {
+        workspaceId,
+        sentiment: null
+      },
+      take: 20
+    });
+
+    if (unclassified.length === 0) {
+      return res.json({ message: 'All feedback items are already classified', processed: 0 });
+    }
+
+    const themes = await prisma.theme.findMany({ where: { workspaceId }, select: { id: true, name: true } });
+    const themeNames = themes.map(t => t.name);
+
+    let processedCount = 0;
+    for (const item of unclassified) {
+      const classification = await classifyFeedback(item.content, themeNames);
+      
+      const matchedThemeIds = themes
+        .filter(t => classification.matchedThemes.includes(t.name))
+        .map(t => t.id);
+
+      await prisma.feedback.update({
+        where: { id: item.id },
+        data: {
+          sentiment: classification.sentiment,
+          sentimentScore: classification.sentimentScore,
+          themes: matchedThemeIds.length > 0 ? {
+            create: matchedThemeIds.map(tId => ({ themeId: tId }))
+          } : undefined
+        }
+      });
+      processedCount++;
+    }
+
+    res.json({ message: 'Backfill completed', processed: processedCount });
+  } catch (error) {
+    res.status(500).json({ error: 'Failed to backfill classification' });
   }
 };
 
