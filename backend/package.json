@@ -4,7 +4,11 @@
   "main": "index.js",
   "scripts": {
     "dev": "tsx watch src/index.ts",
-    "start": "node src/index.js"
+    "build": "tsc",
+    "start": "node dist/index.js",
+    "seed": "tsx prisma/seed.ts",
+    "test:day3": "tsx src/test_day3_api.ts",
+    "test:day4": "tsx src/test_day4_hardening.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

@@ -6,6 +6,7 @@ import feedbackRoutes from './routes/feedback.routes';
 import themeRoutes from './routes/theme.routes';
 import askRoutes from './routes/ask.routes';
 import reportRoutes from './routes/report.routes';
+import { errorHandler } from './middleware/error';
 
 dotenv.config();
 
@@ -26,6 +27,9 @@ app.use('/api/reports', reportRoutes);
 app.get('/health', (req, res) => {
   res.json({ status: 'ok' });
 });
+
+// Centralized error handling middleware
+app.use(errorHandler);
 
 app.listen(port, () => {
   console.log(`Backend server running on http://localhost:${port}`);
