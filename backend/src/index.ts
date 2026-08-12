@@ -4,6 +4,8 @@ import dotenv from 'dotenv';
 import authRoutes from './routes/auth.routes';
 import feedbackRoutes from './routes/feedback.routes';
 import themeRoutes from './routes/theme.routes';
+import askRoutes from './routes/ask.routes';
+import reportRoutes from './routes/report.routes';
 
 dotenv.config();
 
@@ -17,6 +19,8 @@ app.use(express.json());
 app.use('/api/auth', authRoutes);
 app.use('/api/feedback', feedbackRoutes);
 app.use('/api/themes', themeRoutes);
+app.use('/api/ask', askRoutes);
+app.use('/api/reports', reportRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
@@ -28,5 +32,3 @@ app.listen(port, () => {
 });
 
 export default app;
-
-

@@ -14,6 +14,7 @@ model Workspace {
   users     User[]
   feedback  Feedback[]
   themes    Theme[]
+  reports   Report[]
 }
 
 model User {
@@ -23,6 +24,7 @@ model User {
   role        Role      @default(VIEWER)
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reports     Report[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -83,3 +85,20 @@ model FeedbackTheme {
 
   @@id([feedbackId, themeId])
 }
+
+model Report {
+  id                 String    @id @default(cuid())
+  title              String
+  periodStart        DateTime
+  periodEnd          DateTime
+  summary            String
+  keyThemes          String
+  actionableInsights String
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById        String
+  createdBy          User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+

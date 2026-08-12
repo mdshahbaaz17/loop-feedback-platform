@@ -4,6 +4,8 @@ import {
   getFeedbackById,
   createFeedback,
   updateFeedback,
+  reclassifyFeedback,
+  backfillClassification,
   importCSV,
   seedChannelData
 } from '../controllers/feedback.controller';
@@ -20,6 +22,8 @@ router.get('/:id', requireRole(['ADMIN', 'ANALYST', 'VIEWER']), getFeedbackById)
 // Write/Update actions accessible to ADMIN & ANALYST
 router.post('/', requireRole(['ADMIN', 'ANALYST']), createFeedback);
 router.patch('/:id', requireRole(['ADMIN', 'ANALYST']), updateFeedback);
+router.post('/:id/reclassify', requireRole(['ADMIN', 'ANALYST']), reclassifyFeedback);
+router.post('/backfill', requireRole(['ADMIN', 'ANALYST']), backfillClassification);
 router.post('/import', requireRole(['ADMIN', 'ANALYST']), importCSV);
 router.post('/seed', requireRole(['ADMIN', 'ANALYST']), seedChannelData);
 
