@@ -3,8 +3,8 @@ import app from './index';
 async function runSecurityTests() {
   console.log('🚀 Starting Day 5 Security, Rate Limiting & Swagger Tests...\n');
 
-  // Give the server a brief moment to finish binding to port 4000
-  await new Promise((r) => setTimeout(r, 500));
+  // Wait 1.5 seconds for Express server to bind cleanly
+  await new Promise((r) => setTimeout(r, 1500));
   const baseUrl = 'http://localhost:4000';
 
   try {

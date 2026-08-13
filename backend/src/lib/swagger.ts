@@ -255,6 +255,42 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      '/api/analytics/overview': {
+        get: {
+          summary: 'Get Workspace Analytics KPI Overview',
+          tags: ['Analytics'],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'KPI Overview metrics (total feedback, sentiment ratios %, average sentiment score, active themes count)' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/analytics/sentiment-trend': {
+        get: {
+          summary: 'Get Historical Sentiment Time-Series Trend',
+          tags: ['Analytics'],
+          security: [{ bearerAuth: [] }],
+          parameters: [
+            { name: 'days', in: 'query', schema: { type: 'integer', default: 30 } },
+          ],
+          responses: {
+            200: { description: 'Daily aggregated feedback volume and average sentiment score' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
+      '/api/analytics/channels': {
+        get: {
+          summary: 'Get Sentiment Breakdown by Channel',
+          tags: ['Analytics'],
+          security: [{ bearerAuth: [] }],
+          responses: {
+            200: { description: 'Volume and average sentiment breakdown grouped by channel' },
+            401: { description: 'Unauthorized' },
+          },
+        },
+      },
     },
   },
   apis: [], // All specs are defined cleanly in the definition above
