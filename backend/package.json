@@ -9,7 +9,8 @@
     "seed": "tsx prisma/seed.ts",
     "test:day3": "tsx src/test_day3_api.ts",
     "test:day4": "tsx src/test_day4_hardening.ts",
-    "test:day5": "tsx src/test_day5_security.ts"
+    "test:day5": "tsx src/test_day5_security.ts",
+    "test:day6": "tsx src/test_day6_backend.ts"
   },
   "prisma": {
     "seed": "tsx prisma/seed.ts"

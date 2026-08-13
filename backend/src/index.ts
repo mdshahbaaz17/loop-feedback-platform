@@ -8,8 +8,10 @@ import feedbackRoutes from './routes/feedback.routes';
 import themeRoutes from './routes/theme.routes';
 import askRoutes from './routes/ask.routes';
 import reportRoutes from './routes/report.routes';
+import analyticsRoutes from './routes/analytics.routes';
 import { errorHandler } from './middleware/error';
 import { apiLimiter, authLimiter, aiLimiter } from './middleware/rateLimiter';
+import { sanitizeInput } from './middleware/sanitize';
 import { swaggerSpec } from './lib/swagger';
 
 dotenv.config();
@@ -35,6 +37,9 @@ app.use(
 
 app.use(express.json({ limit: '10mb' }));
 
+// Input XSS Sanitization Middleware
+app.use('/api', sanitizeInput);
+
 // Swagger OpenAPI Documentation
 app.use('/api/docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/api/docs-json', (req, res) => {
@@ -51,6 +56,7 @@ app.use('/api/feedback', feedbackRoutes);
 app.use('/api/themes', themeRoutes);
 app.use('/api/ask', aiLimiter, askRoutes);
 app.use('/api/reports', aiLimiter, reportRoutes);
+app.use('/api/analytics', analyticsRoutes);
 
 // Health check
 app.get('/health', (req, res) => {
