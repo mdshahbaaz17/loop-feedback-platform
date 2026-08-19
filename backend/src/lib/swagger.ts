@@ -291,6 +291,30 @@ const options: swaggerJsdoc.Options = {
           },
         },
       },
+      '/health': {
+        get: {
+          summary: 'System Health Check & Uptime',
+          tags: ['System'],
+          responses: {
+            200: {
+              description: 'Service health status, uptime, and timestamp',
+              content: {
+                'application/json': {
+                  schema: {
+                    type: 'object',
+                    properties: {
+                      status: { type: 'string', example: 'ok' },
+                      timestamp: { type: 'string', format: 'date-time' },
+                      uptime: { type: 'number', example: 120 },
+                      environment: { type: 'string', example: 'development' },
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+      },
     },
   },
   apis: [], // All specs are defined cleanly in the definition above
