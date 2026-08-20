@@ -5,8 +5,8 @@ import "./globals.css";
 const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "Loop Feedback Platform",
-  description: "A platform for managing feedback loops",
+  title: "LOOP | Customer Feedback Intelligence Platform",
+  description: "Enterprise feedback tracking and sentiment classification platform",
 };
 
 export default function RootLayout({

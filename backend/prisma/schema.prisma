@@ -3,8 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
-  url      = env("DATABASE_URL")
+  provider = "sqlite"
 }
 
 model Workspace {
@@ -14,6 +13,8 @@ model Workspace {
   updatedAt DateTime   @updatedAt
   users     User[]
   feedback  Feedback[]
+  themes    Theme[]
+  reports   Report[]
 }
 
 model User {
@@ -23,6 +24,7 @@ model User {
   role        Role      @default(VIEWER)
   workspaceId String
   workspace   Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  reports     Report[]
   createdAt   DateTime  @default(now())
   updatedAt   DateTime  @updatedAt
 }
@@ -34,16 +36,19 @@ enum Role {
 }
 
 model Feedback {
-  id          String         @id @default(cuid())
-  source      String
-  content     String
-  sentiment   Sentiment?
-  status      FeedbackStatus @default(NEW)
-  workspaceId String
-  workspace   Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
-  themes      FeedbackTheme[]
-  createdAt   DateTime       @default(now())
-  updatedAt   DateTime       @updatedAt
+  id             String         @id @default(cuid())
+  source         String
+  channel        String         @default("EMAIL")
+  customerLabel  String?
+  content        String
+  sentiment      Sentiment?
+  sentimentScore Float?
+  status         FeedbackStatus @default(NEW)
+  workspaceId    String
+  workspace      Workspace      @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  themes         FeedbackTheme[]
+  createdAt      DateTime       @default(now())
+  updatedAt      DateTime       @updatedAt
 }
 
 enum Sentiment {
@@ -60,18 +65,40 @@ enum FeedbackStatus {
 
 model Theme {
   id          String          @id @default(cuid())
-  name        String          @unique
+  name        String
   description String?
+  workspaceId String
+  workspace   Workspace       @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
   feedbacks   FeedbackTheme[]
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
+
+  @@unique([workspaceId, name])
 }
 
 model FeedbackTheme {
   feedbackId String
   themeId    String
+  confidence Float?
   feedback   Feedback @relation(fields: [feedbackId], references: [id], onDelete: Cascade)
-  theme      Theme    @relation(fields: [themeId], onDelete: Cascade)
+  theme      Theme    @relation(fields: [themeId], references: [id], onDelete: Cascade)
 
   @@id([feedbackId, themeId])
 }
+
+model Report {
+  id                 String    @id @default(cuid())
+  title              String
+  periodStart        DateTime
+  periodEnd          DateTime
+  summary            String
+  keyThemes          String
+  actionableInsights String
+  workspaceId        String
+  workspace          Workspace @relation(fields: [workspaceId], references: [id], onDelete: Cascade)
+  createdById        String
+  createdBy          User      @relation(fields: [createdById], references: [id], onDelete: Cascade)
+  createdAt          DateTime  @default(now())
+  updatedAt          DateTime  @updatedAt
+}
+
