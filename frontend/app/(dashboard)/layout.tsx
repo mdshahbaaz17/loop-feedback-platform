@@ -21,6 +21,7 @@ import { CreateFeedbackModal } from "@/components/CreateFeedbackModal";
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
+  { name: 'AI Studio', href: '/ai-studio', icon: Repeat },
   { name: 'Feedback', href: '/feedback', icon: MessageSquare },
   { name: 'Loops', href: '/loops', icon: Repeat },
   { name: 'Analytics', href: '/analytics', icon: BarChart3 },
