@@ -3,9 +3,9 @@
 
 export default function TeamManagementPage() {
   const members = [
-    { name: 'Alex Rivera', email: 'alex@loop.io', role: 'Owner', status: 'Active' },
-    { name: 'Sarah Chen', email: 'sarah@loop.io', role: 'Admin', status: 'Active' },
-    { name: 'Marcus Vance', email: 'marcus@loop.io', role: 'Viewer', status: 'Invited' },
+    { name: 'Md Shahbaaz Khan', email: 'mdshaaz1702@gmail.com', role: 'Frontend Developer', status: 'Active' },
+    { name: 'Sabut Kumar Baidhya', email: 'sabutstha234@gmail.com', role: 'Backend Developer', status: 'Active' },
+    { name: 'Bhavesh Suthar', email: 'bhavesh.200628@gmail.com', role: 'Frontend Developer', status: 'Active' },
   ]
 
   return (

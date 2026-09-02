@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# LOOP — AI Customer-Feedback Intelligence Platform
 
-## Getting Started
+Project LOOP is a corporate-grade, multi-tenant web application designed to help product teams ingest, classify, and extract actionable insights from scattered customer feedback across support tickets, app store reviews, NPS surveys, and sales call notes.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
-```
+## 🔑 Demo Credentials (Seeded Workspace)
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+Use the following pre-configured credentials to evaluate Role-Based Access Control (RBAC) and tenant isolation:
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+| Role | Email | Password | Permissions |
+| :--- | :--- | :--- | :--- |
+| **Admin** | `admin@demo.com` | `Password123!` | Full workspace control, team management, role assignment, feedback CRUD |
+| **Analyst** | `analyst@demo.com` | `Password123!` | Feedback ingestion (manual & CSV), AI analysis, report generation |
+| **Viewer** | `viewer@demo.com` | `Password123!` | Read-only access to analytics dashboard, inbox, trends, and reports |
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+---
 
-## Learn More
+## 🛠 Tech Stack
 
-To learn more about Next.js, take a look at the following resources:
+- **Framework:** Next.js 14 (App Router) + TypeScript
+- **Styling:** Tailwind CSS
+- **Database:** PostgreSQL (Neon / Supabase)
+- **ORM:** Prisma
+- **Authentication:** NextAuth (Auth.js) with JWT session strategy & RBAC
+- **AI Engine:** Anthropic Claude API / Google Gemini API (structured JSON output)
+- **Vector Search:** Embeddings for retrieval-grounded semantic search (Ask LOOP)
+- **Data Visualization:** Recharts
+- **Schema Validation:** Zod
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 🏛 System Architecture & Security
 
-## Deploy on Vercel
+LOOP implements a 3-tier architecture:
+1. **Presentation Layer:** Next.js Server & Client Components.
+2. **API Layer:** Route Handlers enforcing server-side session authentication, RBAC authorization, and Zod schema validation.
+3. **Data Layer:** PostgreSQL accessed via Prisma ORM.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+> **Non-Negotiable Security Rule:** Every database query touching feedback, themes, reports, or users is strictly filtered by the authenticated user's `workspaceId`. Cross-tenant data leaks are blocked server-side.
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+---
+
+## ⚙️ Environment Variables
+
+Create a `.env` file in the root directory with the following variables:
+
+```env
+# Database connection
+DATABASE_URL="postgresql://user:password@host:port/database?sslmode=require"
+
+# NextAuth Configuration
+NEXTAUTH_SECRET="your-generated-nextauth-secret"
+NEXTAUTH_URL="http://localhost:3000"
+
+# AI Integration
+GEMINI_API_KEY="your-gemini-api-key"
+# ANTHROPIC_API_KEY="your-anthropic-api-key"
