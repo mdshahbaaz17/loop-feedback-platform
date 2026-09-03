@@ -5,93 +5,215 @@ import { api } from "@/lib/api";
 import { Feedback } from "@/lib/api/types";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MessageSquare, Clock, User, Tag } from "lucide-react";
+import { ArrowLeft, MessageSquare, Clock, User, Tag, Sparkles, CheckCircle, RefreshCw } from "lucide-react";
 import Link from "next/link";
 
 export default function FeedbackDetailsPage({ params }: { params: Promise<{ id: string }> }) {
   const resolvedParams = use(params);
   const [item, setItem] = useState<Feedback | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [updating, setUpdating] = useState(false);
+  const [reclassifying, setReclassifying] = useState(false);
+  const [commentText, setCommentText] = useState("");
+  const [comments, setComments] = useState<{ id: string; author: string; text: string; time: string }[]>([
+    { id: 'c1', author: 'AI Triage Agent', text: 'Sentiment scored and automatically tagged to workspace themes.', time: 'System Event' }
+  ]);
+
+  const loadItem = async () => {
+    try {
+      const data = await api.feedback.get(resolvedParams.id);
+      if (data) setItem(data);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    api.feedback.get(resolvedParams.id).then(data => {
-      if (data) setItem(data);
-    });
+    loadItem();
   }, [resolvedParams.id]);
 
-  if (!item) {
+  const handleStatusChange = async (newStatus: 'NEW' | 'REVIEWED' | 'RESOLVED') => {
+    if (!item) return;
+    setUpdating(true);
+    try {
+      const updated = await api.feedback.update(item.id, { status: newStatus });
+      setItem(updated);
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setUpdating(false);
+    }
+  };
+
+  const handleReclassify = async () => {
+    if (!item) return;
+    setReclassifying(true);
+    try {
+      await api.feedback.reclassify(item.id);
+      await loadItem();
+    } catch (e) {
+      console.error(e);
+    } finally {
+      setReclassifying(false);
+    }
+  };
+
+  const handleAddComment = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!commentText.trim()) return;
+    setComments(prev => [
+      ...prev,
+      {
+        id: 'c-' + Date.now(),
+        author: 'Current User',
+        text: commentText.trim(),
+        time: 'Just now'
+      }
+    ]);
+    setCommentText("");
+  };
+
+  if (loading || !item) {
     return (
       <div className="space-y-6 max-w-4xl mx-auto animate-pulse">
-        <div className="h-8 w-32 bg-gray-200 rounded"></div>
-        <div className="h-64 bg-gray-100 rounded-xl"></div>
+        <div className="h-6 w-32 bg-gray-200 dark:bg-gray-800 rounded"></div>
+        <div className="h-64 bg-gray-100 dark:bg-gray-800 rounded-2xl"></div>
       </div>
     );
   }
 
   return (
     <div className="space-y-6 max-w-4xl mx-auto">
-      <Link href="/feedback" className="inline-flex items-center text-sm text-gray-500 hover:text-gray-900 dark:hover:text-gray-300">
-        <ArrowLeft className="w-4 h-4 mr-1" /> Back to Feedback
-      </Link>
+      {/* Top Breadcrumb */}
+      <div className="flex items-center justify-between">
+        <Link href="/feedback" className="inline-flex items-center text-xs font-medium text-gray-500 hover:text-gray-900 dark:hover:text-gray-300">
+          <ArrowLeft className="w-3.5 h-3.5 mr-1" /> Back to Feedback
+        </Link>
+        <span className="text-[11px] font-mono text-gray-400">ID: {item.id}</span>
+      </div>
 
-      <div className="bg-white dark:bg-black rounded-xl border border-gray-200 dark:border-gray-800 shadow-sm overflow-hidden">
-        <div className="p-6 border-b border-gray-200 dark:border-gray-800">
-          <div className="flex justify-between items-start mb-4">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{item.title}</h1>
-            <div className="flex gap-2">
-              <Badge variant={item.status === 'NEW' ? 'default' : item.status === 'IN_PROGRESS' ? 'warning' : 'success'}>
-                {item.status.replace('_', ' ')}
-              </Badge>
-              <Badge variant="outline">{item.priority} PRIORITY</Badge>
+      {/* Main Feedback Card */}
+      <div className="bg-white dark:bg-zinc-950 rounded-2xl border border-gray-200 dark:border-gray-800 shadow-xs overflow-hidden">
+        <div className="p-6 border-b border-gray-100 dark:border-gray-800 space-y-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+            <div className="flex items-center gap-2">
+              <span className="font-mono text-xs px-2.5 py-1 rounded-md bg-gray-100 dark:bg-zinc-800 text-gray-700 dark:text-gray-300 font-semibold">
+                {item.channel || 'EMAIL'}
+              </span>
+              <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
+                item.sentiment === 'POSITIVE'
+                  ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950/60 dark:text-emerald-400'
+                  : item.sentiment === 'NEGATIVE'
+                  ? 'bg-rose-100 text-rose-700 dark:bg-rose-950/60 dark:text-rose-400'
+                  : 'bg-amber-100 text-amber-700 dark:bg-amber-950/60 dark:text-amber-400'
+              }`}>
+                {item.sentiment || 'NEUTRAL'} ({item.sentimentScore !== undefined ? `${(item.sentimentScore > 0 ? '+' : '')}${item.sentimentScore}` : '0.0'})
+              </span>
+            </div>
+
+            {/* Quick Status Action Buttons */}
+            <div className="flex items-center gap-1.5">
+              {(['NEW', 'REVIEWED', 'RESOLVED'] as const).map((status) => (
+                <button
+                  key={status}
+                  disabled={updating}
+                  onClick={() => handleStatusChange(status)}
+                  className={`text-[11px] font-medium px-2.5 py-1 rounded-lg border transition ${
+                    item.status === status
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-gray-50 dark:bg-zinc-900 text-gray-600 dark:text-gray-400 border-gray-200 dark:border-gray-800 hover:bg-gray-100'
+                  }`}
+                >
+                  {status}
+                </button>
+              ))}
             </div>
           </div>
-          
-          <p className="text-gray-600 dark:text-gray-300 text-lg leading-relaxed whitespace-pre-wrap">
-            {item.description}
-          </p>
 
-          <div className="flex flex-wrap gap-4 mt-6 text-sm text-gray-500">
-            <div className="flex items-center gap-1"><User className="w-4 h-4" /> Reported by {item.authorId}</div>
-            <div className="flex items-center gap-1"><Clock className="w-4 h-4" /> {new Date(item.createdAt).toLocaleString()}</div>
-            <div className="flex items-center gap-1"><Tag className="w-4 h-4" /> {item.category}</div>
+          <h1 className="text-xl font-bold text-gray-900 dark:text-white">
+            {item.title || item.content}
+          </h1>
+
+          <div className="p-4 rounded-xl bg-gray-50/70 dark:bg-zinc-900/40 border border-gray-100 dark:border-gray-800">
+            <p className="text-gray-800 dark:text-gray-200 text-sm leading-relaxed whitespace-pre-wrap">
+              {item.content || item.description}
+            </p>
           </div>
-          
-          {item.tags.length > 0 && (
-            <div className="flex gap-2 mt-4">
-              {item.tags.map(tag => (
-                <span key={tag} className="bg-gray-100 dark:bg-zinc-800 text-gray-600 dark:text-gray-300 px-2 py-1 rounded text-xs font-medium">
-                  #{tag}
+
+          {/* Metadata Row */}
+          <div className="flex flex-wrap gap-4 pt-2 text-xs text-gray-500 border-t border-gray-100 dark:border-gray-800">
+            <div className="flex items-center gap-1.5">
+              <User className="w-3.5 h-3.5" /> Customer Segment: <strong className="text-gray-700 dark:text-gray-300">{item.customerLabel || 'SMB'}</strong>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Tag className="w-3.5 h-3.5" /> Source: <strong className="text-gray-700 dark:text-gray-300">{item.source || 'Direct'}</strong>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <Clock className="w-3.5 h-3.5" /> Logged: <span>{new Date(item.createdAt).toLocaleString()}</span>
+            </div>
+          </div>
+
+          {/* Theme Badges */}
+          {item.themes && item.themes.length > 0 && (
+            <div className="flex items-center gap-2 pt-1 flex-wrap">
+              <span className="text-[11px] font-semibold text-gray-400">Attached Themes:</span>
+              {item.themes.map((t, idx) => (
+                <span key={idx} className="bg-indigo-50 dark:bg-indigo-950/40 border border-indigo-200 dark:border-indigo-800 text-indigo-700 dark:text-indigo-300 px-2.5 py-0.5 rounded-full text-xs font-medium">
+                  🏷️ {t.theme?.name}
                 </span>
               ))}
             </div>
           )}
+
+          {/* AI Reclassify Button */}
+          <div className="pt-2 flex justify-end">
+            <Button
+              variant="outline"
+              size="sm"
+              disabled={reclassifying}
+              onClick={handleReclassify}
+              className="text-xs text-indigo-600 dark:text-indigo-400 border-indigo-200 dark:border-indigo-900 hover:bg-indigo-50 dark:hover:bg-indigo-950/40"
+            >
+              <Sparkles className="w-3.5 h-3.5 mr-1" />
+              {reclassifying ? "Analyzing with AI..." : "Reclassify with AI Engine"}
+            </Button>
+          </div>
         </div>
-        
-        <div className="bg-gray-50 dark:bg-zinc-900/50 p-6">
-          <h3 className="font-semibold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
-            <MessageSquare className="w-5 h-5" /> Discussion & Activity
+
+        {/* Activity & Comments */}
+        <div className="p-6 bg-gray-50/50 dark:bg-zinc-900/30">
+          <h3 className="text-sm font-bold text-gray-900 dark:text-white mb-4 flex items-center gap-2">
+            <MessageSquare className="w-4 h-4 text-blue-500" /> Internal Notes & Audit Trail
           </h3>
-          
-          <div className="space-y-6 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 dark:before:via-gray-700 before:to-transparent">
-            {/* Timeline Item */}
-            <div className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-              <div className="flex items-center justify-center w-10 h-10 rounded-full border border-white dark:border-black bg-gray-100 dark:bg-gray-800 text-gray-500 shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2">
-                <Clock className="w-4 h-4" />
-              </div>
-              <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] p-4 rounded-xl border border-gray-200 dark:border-gray-800 bg-white dark:bg-black shadow-sm">
-                <div className="flex items-center justify-between mb-1">
-                  <span className="font-semibold text-sm">Feedback created</span>
-                  <span className="text-xs text-gray-500">{new Date(item.createdAt).toLocaleDateString()}</span>
+
+          <div className="space-y-3 mb-6">
+            {comments.map((c) => (
+              <div key={c.id} className="p-3.5 bg-white dark:bg-zinc-950 rounded-xl border border-gray-200 dark:border-gray-800 text-xs space-y-1">
+                <div className="flex justify-between items-center text-[10px] text-gray-400">
+                  <span className="font-semibold text-gray-700 dark:text-gray-300">{c.author}</span>
+                  <span>{c.time}</span>
                 </div>
+                <p className="text-gray-600 dark:text-gray-300">{c.text}</p>
               </div>
-            </div>
+            ))}
           </div>
 
-          <div className="mt-8">
-            <textarea className="w-full bg-white dark:bg-black border border-gray-200 dark:border-gray-700 rounded-lg p-3 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500" rows={3} placeholder="Add a comment..."></textarea>
-            <div className="flex justify-end mt-2">
-              <Button>Post Comment</Button>
+          <form onSubmit={handleAddComment} className="space-y-2">
+            <textarea
+              rows={2}
+              value={commentText}
+              onChange={(e) => setCommentText(e.target.value)}
+              placeholder="Add an internal note or next action item..."
+              className="w-full bg-white dark:bg-zinc-950 border border-gray-200 dark:border-gray-800 rounded-xl p-3 text-xs focus:outline-none focus:ring-2 focus:ring-blue-600 text-gray-900 dark:text-white"
+            />
+            <div className="flex justify-end">
+              <Button type="submit" size="sm" className="text-xs bg-blue-600 hover:bg-blue-500 text-white">
+                Add Note
+              </Button>
             </div>
-          </div>
+          </form>
         </div>
       </div>
     </div>

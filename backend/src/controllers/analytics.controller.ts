@@ -1,11 +1,12 @@
-import { Request, Response } from 'express';
+import { Response } from 'express';
 import { prisma } from '../lib/prisma';
+import { AuthRequest } from '../middleware/auth';
 
 /**
  * GET /api/analytics/overview
  * Returns workspace-scoped KPI summary: total feedback, sentiment breakdown, avg sentiment score, active themes count.
  */
-export const getAnalyticsOverview = async (req: Request, res: Response) => {
+export const getAnalyticsOverview = async (req: AuthRequest, res: Response) => {
   try {
     const workspaceId = req.user!.workspaceId;
 
@@ -63,7 +64,7 @@ export const getAnalyticsOverview = async (req: Request, res: Response) => {
  * GET /api/analytics/sentiment-trend
  * Returns historical time-series aggregation of feedback volume and average sentiment.
  */
-export const getSentimentTrend = async (req: Request, res: Response) => {
+export const getSentimentTrend = async (req: AuthRequest, res: Response) => {
   try {
     const workspaceId = req.user!.workspaceId;
     const days = parseInt(req.query.days as string) || 30;
@@ -118,7 +119,7 @@ export const getSentimentTrend = async (req: Request, res: Response) => {
  * GET /api/analytics/channels
  * Returns distribution and average sentiment score grouped by feedback channel.
  */
-export const getChannelBreakdown = async (req: Request, res: Response) => {
+export const getChannelBreakdown = async (req: AuthRequest, res: Response) => {
   try {
     const workspaceId = req.user!.workspaceId;
 

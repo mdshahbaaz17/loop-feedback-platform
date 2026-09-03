@@ -5,7 +5,7 @@ async function runDay6Tests() {
 
   // Wait 1.5 seconds for Express server to bind cleanly
   await new Promise((r) => setTimeout(r, 1500));
-  const baseUrl = 'http://localhost:4000';
+  const baseUrl = 'http://127.0.0.1:4000';
 
   try {
     // 1. Login as Admin user to obtain JWT

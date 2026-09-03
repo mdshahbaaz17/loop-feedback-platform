@@ -46,8 +46,8 @@ export const signup = async (req: Request, res: Response) => {
 
     res.status(201).json({ token, user: { id: user.id, email: user.email, role: user.role } });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -72,8 +72,8 @@ export const login = async (req: Request, res: Response) => {
 
     res.json({ token, user: { id: user.id, email: user.email, role: user.role, workspaceId: user.workspaceId } });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Internal server error' });
     }
@@ -159,8 +159,8 @@ export const createUser = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(newUser);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Failed to create user' });
     }
@@ -174,7 +174,7 @@ const updateRoleSchema = z.object({
 export const updateUserRole = async (req: AuthRequest, res: Response) => {
   try {
     const workspaceId = req.user!.workspaceId;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const { role } = updateRoleSchema.parse(req.body);
 
     const targetUser = await prisma.user.findFirst({
@@ -198,8 +198,8 @@ export const updateUserRole = async (req: AuthRequest, res: Response) => {
 
     res.json(updatedUser);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Failed to update user role' });
     }

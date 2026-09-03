@@ -28,8 +28,8 @@ export const askLoop = async (req: AuthRequest, res: Response) => {
       totalRetrieved: contextItems.length,
     });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Failed to process Ask LOOP query' });
     }

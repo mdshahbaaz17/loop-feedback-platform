@@ -113,7 +113,7 @@ export const getFeedback = async (req: AuthRequest, res: Response) => {
 export const getFeedbackById = async (req: AuthRequest, res: Response) => {
   try {
     const workspaceId = req.user!.workspaceId;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const item = await prisma.feedback.findFirst({
       where: { id, workspaceId },
@@ -179,8 +179,8 @@ export const createFeedback = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json(feedback);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Failed to create feedback' });
     }
@@ -190,7 +190,7 @@ export const createFeedback = async (req: AuthRequest, res: Response) => {
 export const updateFeedback = async (req: AuthRequest, res: Response) => {
   try {
     const workspaceId = req.user!.workspaceId;
-    const { id } = req.params;
+    const id = req.params.id as string;
     const data = updateFeedbackSchema.parse(req.body);
 
     const existing = await prisma.feedback.findFirst({
@@ -226,8 +226,8 @@ export const updateFeedback = async (req: AuthRequest, res: Response) => {
 
     res.json(updated);
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Failed to update feedback' });
     }
@@ -237,7 +237,7 @@ export const updateFeedback = async (req: AuthRequest, res: Response) => {
 export const reclassifyFeedback = async (req: AuthRequest, res: Response) => {
   try {
     const workspaceId = req.user!.workspaceId;
-    const { id } = req.params;
+    const id = req.params.id as string;
 
     const item = await prisma.feedback.findFirst({
       where: { id, workspaceId }
@@ -353,8 +353,8 @@ export const importCSV = async (req: AuthRequest, res: Response) => {
 
     res.status(201).json({ message: 'Import successful', count: created.count });
   } catch (error) {
-    if (error instanceof z.ZodError) {
-      res.status(400).json({ error: error.errors });
+    if (error instanceof z.ZodError || (error as any)?.name === 'ZodError') {
+      res.status(400).json({ error: (error as any).issues || (error as any).errors || error });
     } else {
       res.status(500).json({ error: 'Failed to import CSV data' });
     }

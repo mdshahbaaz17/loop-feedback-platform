@@ -1,6 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
 import { z } from 'zod';
-import { Prisma } from '@prisma/client';
 
 export const errorHandler = (
   err: any,
@@ -9,18 +8,19 @@ export const errorHandler = (
   next: NextFunction
 ) => {
   // 1. Zod Validation Errors
-  if (err instanceof z.ZodError) {
+  if (err instanceof z.ZodError || err?.name === 'ZodError') {
+    const issues = (err as any).issues || (err as any).errors || [];
     return res.status(400).json({
       error: 'Invalid request data',
-      details: err.errors.map(e => ({
-        path: e.path.join('.'),
+      details: issues.map((e: any) => ({
+        path: Array.isArray(e.path) ? e.path.join('.') : String(e.path || ''),
         message: e.message
       }))
     });
   }
 
   // 2. Prisma Database Errors
-  if (err instanceof Prisma.PrismaClientKnownRequestError) {
+  if (err?.code) {
     if (err.code === 'P2025') {
       return res.status(404).json({ error: 'Record not found' });
     }

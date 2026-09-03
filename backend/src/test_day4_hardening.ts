@@ -5,7 +5,7 @@ async function runDay4HardeningSuite() {
   console.log('🛡️ Starting Day 4 Backend Security & Hardening Suite...');
   console.log('=========================================================\n');
 
-  const baseUrl = `http://localhost:4000`;
+  const baseUrl = `http://127.0.0.1:4000`;
 
   try {
     // 1. Health check

@@ -2,12 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  LayoutDashboard, 
-  MessageSquare, 
-  Repeat, 
-  BarChart3, 
-  Users, 
+import {
+  LayoutDashboard,
+  MessageSquare,
+  Repeat,
+  BarChart3,
+  Users,
   Settings,
   Bell,
   Search,
@@ -15,9 +15,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useState } from "react";
+import { useRouter } from "next/navigation";
+import { useState, useEffect } from "react";
 import { cn } from "@/lib/utils";
 import { CreateFeedbackModal } from "@/components/CreateFeedbackModal";
+import { getUser, logout, AuthUser } from "@/lib/auth";
 
 const navigation = [
   { name: 'Dashboard', href: '/dashboard', icon: LayoutDashboard },
@@ -31,14 +33,26 @@ const navigation = [
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
+  const router = useRouter();
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [currentUser, setCurrentUser] = useState<AuthUser | null>(null);
+
+  useEffect(() => {
+    const user = getUser();
+    setCurrentUser(user);
+  }, []);
+
+  const handleLogout = () => {
+    logout();
+    router.push("/login");
+  };
 
   return (
     <div className="flex h-screen bg-gray-50 dark:bg-zinc-950">
       {/* Mobile sidebar overlay */}
       {sidebarOpen && (
-        <div 
+        <div
           className="fixed inset-0 z-40 bg-black/50 lg:hidden"
           onClick={() => setSidebarOpen(false)}
         />
@@ -70,8 +84,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                 href={item.href}
                 className={cn(
                   "flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors",
-                  isActive 
-                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400" 
+                  isActive
+                    ? "bg-blue-50 text-blue-600 dark:bg-blue-900/30 dark:text-blue-400"
                     : "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-zinc-900"
                 )}
               >
@@ -81,12 +95,30 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             );
           })}
         </nav>
-        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center gap-3">
-          <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-600 flex items-center justify-center font-bold text-sm">JD</div>
-          <div className="flex-1 min-w-0">
-            <p className="text-sm font-medium text-gray-900 dark:text-white truncate">Jane Doe</p>
-            <p className="text-xs text-gray-500 truncate">jane@example.com</p>
+        <div className="p-4 border-t border-gray-200 dark:border-gray-800 flex items-center justify-between gap-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <div className="w-8 h-8 rounded-full bg-blue-600 text-white flex items-center justify-center font-bold text-xs shrink-0">
+              {currentUser?.email ? currentUser.email.slice(0, 2).toUpperCase() : 'AC'}
+            </div>
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-1.5">
+                <p className="text-xs font-semibold text-gray-900 dark:text-white truncate">
+                  {currentUser?.email ? currentUser.email.split('@')[0] : 'admin'}
+                </p>
+                <span className="text-[9px] font-bold px-1.5 py-0.2 rounded bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-300">
+                  {currentUser?.role || 'ADMIN'}
+                </span>
+              </div>
+              <p className="text-[11px] text-gray-400 truncate">{currentUser?.email || 'admin@acme.com'}</p>
+            </div>
           </div>
+          <button
+            onClick={handleLogout}
+            title="Sign out"
+            className="p-1.5 text-gray-400 hover:text-red-600 dark:hover:text-red-400 rounded-md hover:bg-gray-100 dark:hover:bg-zinc-800 transition"
+          >
+            <span className="text-xs font-semibold">Exit</span>
+          </button>
         </div>
       </div>
 
@@ -95,7 +127,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
         {/* Topbar */}
         <header className="h-16 flex items-center justify-between px-4 sm:px-6 lg:px-8 bg-white dark:bg-black border-b border-gray-200 dark:border-gray-800">
           <div className="flex items-center flex-1">
-            <button 
+            <button
               className="lg:hidden p-2 mr-3 text-gray-500 hover:bg-gray-100 rounded-md"
               onClick={() => setSidebarOpen(true)}
             >
@@ -103,9 +135,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
             <div className="relative w-full max-w-md hidden sm:block">
               <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-gray-500" />
-              <Input 
-                type="search" 
-                placeholder="Search feedback, loops..." 
+              <Input
+                type="search"
+                placeholder="Search feedback, loops..."
                 className="w-full pl-9 bg-gray-50 dark:bg-zinc-900 border-none"
               />
             </div>

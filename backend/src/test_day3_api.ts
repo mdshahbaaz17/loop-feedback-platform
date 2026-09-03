@@ -5,7 +5,7 @@ async function runDay3Verification() {
   console.log('🚀 Starting Day 3 Express Backend AI Verification Suite...');
   console.log('=========================================================\n');
 
-  const baseUrl = `http://localhost:4000`;
+  const baseUrl = `http://127.0.0.1:4000`;
 
   try {
     // 1. Health check
